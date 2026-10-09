@@ -1,0 +1,23 @@
+# gsd-monitor（複数リポジトリの gsd-lite の状態を横串で見るダッシュボード）の systemd user サービス。
+#
+# 導入:  cp docs/systemd/gsd-monitor.service ~/.config/systemd/user/
+#        systemctl --user daemon-reload && systemctl --user enable --now gsd-monitor
+# - systemd user サービスなので sudo 不要（linger が有効なためログアウト後・再起動後も動く）
+# - 外のリバースプロキシ https://fre.future.co.jp/app02-gsd-monitor/ から届くように 0.0.0.0 で待ち受ける
+# - ポートは 3300 から空きを +1 で探す。実際のポートはログの 1 行目
+# - ログは journald（journalctl --user -u gsd-monitor）
+# - 引数を変えるときは systemctl --user edit gsd-monitor で ExecStart を上書きする
+
+[Unit]
+Description=gsd-monitor（gsd-lite の状態ダッシュボード）
+
+[Service]
+Type=simple
+WorkingDirectory=%h/workspaces/dev/fre-components/gsd-monitor
+Environment=PATH=%h/.bun/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=%h/.bun/bin/bun src/cli.ts --host 0.0.0.0 --root %h/workspaces/dev --port 3300 --base-path /app02-gsd-monitor/
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

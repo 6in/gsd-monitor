@@ -21,6 +21,7 @@ bun run typecheck
 
 ポートは 3300 から探し、使用中なら +1 ずつ空きを探す（実際のポートは起動時の 1 行目に出る）。すべての URL は `--base-path`（既定 `/app02-gsd-monitor/`）の下に置く。
 画面の JS / CSS も起動時にこのプレフィックス付きで束ねるので、同じプレフィックスでリバースプロキシに載せられる。
+常駐は systemd user サービス（`docs/systemd/gsd-monitor.service`。導入手順はファイル冒頭。ログは `journalctl --user -u gsd-monitor`）。
 `bun run start` は `--host 0.0.0.0` で待ち受ける（このマシンの外のリバースプロキシ https://fre.future.co.jp/app02-gsd-monitor/ から届くように）。CLI の既定は 127.0.0.1。
 
 ## 読み方
