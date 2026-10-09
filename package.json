@@ -1,0 +1,18 @@
+{
+  "name": "gsd-monitor",
+  "version": "0.1.0",
+  "description": "複数リポジトリの .gsd-lite/state.json を横串で見るダッシュボード",
+  "type": "module",
+  "private": true,
+  "bin": { "gsd-monitor": "src/cli.ts" },
+  "scripts": {
+    "start": "bun src/cli.ts",
+    "dev": "bun --watch src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
