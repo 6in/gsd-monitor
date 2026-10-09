@@ -6,7 +6,7 @@
   "private": true,
   "bin": { "gsd-monitor": "src/cli.ts" },
   "scripts": {
-    "start": "bun src/cli.ts",
+    "start": "bun src/cli.ts --host 0.0.0.0",
     "dev": "bun --watch src/cli.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
