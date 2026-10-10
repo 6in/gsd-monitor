@@ -3,11 +3,12 @@
 // - 発見: 探索開始フォルダから下へ歩き、.gsd-lite/ を持つディレクトリをプロジェクトとする。
 //   .gsd-lite の中（scratch に残った写し）・.git・node_modules 等には降りない。シンボリックリンクはたどらない
 // - 形: in-repo（.gsd-lite/state.json）と gsd-control（.gsd-lite/milestones/<slug>/state.json）の両方
-// - タスク: PLAN.md の「## Tasks」節の「- [x] T1: 題」「- [ ] T2: 題」を数える
+// - タスク: PLAN.md の「## Tasks」節の「- [x] T1: 題」「- [ ] T2: 題」を数える。
+//   節の中の「### 修正ラウンド 1（…）」はグループの区切り（括弧書きの前までをグループ名にする）
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
-import type { Milestone, Task } from "./types.ts";
+import type { Milestone, Task, TaskGroup } from "./types.ts";
 
 export const PRUNE_DIRS = new Set([
   ".git", ".gsd-lite", "node_modules", ".venv", "venv", "__pycache__",
@@ -86,19 +87,43 @@ export function stateFiles(project: string): string[] {
   return files;
 }
 
+/** 「### 修正ラウンド 1（2026-10-10 plan、…）」→「修正ラウンド 1」 */
+export function groupName(heading: string): string {
+  const name = heading.replace(/^###\s+/, "").split(/[（(]/)[0]!.trim();
+  return name || heading.replace(/^###\s+/, "").trim();
+}
+
 export function parseTasks(planText: string): Task[] {
   const tasks: Task[] = [];
   let inTasks = false;
+  let group = "";
   for (const line of planText.split(/\r?\n/)) {
     if (line.startsWith("## ")) {
       inTasks = line.trim() === "## Tasks";
+      group = "";
       continue;
     }
     if (!inTasks) continue;
+    if (line.startsWith("### ")) {
+      group = groupName(line.trim());
+      continue;
+    }
     const g = TASK_RE.exec(line)?.groups;
-    if (g) tasks.push({ id: g.id!, title: g.title!.trim(), done: g.mark !== " " });
+    if (g) tasks.push({ id: g.id!, title: g.title!.trim(), done: g.mark !== " ", group });
   }
   return tasks;
+}
+
+/** タスクを持つグループを PLAN の順に。同じ名前の見出しが離れて出ても 1 つにまとめる */
+export function taskGroups(tasks: Task[]): TaskGroup[] {
+  const groups = new Map<string, TaskGroup>();
+  for (const t of tasks) {
+    const g = groups.get(t.group) ?? { name: t.group, done: 0, total: 0 };
+    g.total++;
+    if (t.done) g.done++;
+    groups.set(t.group, g);
+  }
+  return [...groups.values()];
 }
 
 export function lastTurn(progressText: string): string {
@@ -131,7 +156,7 @@ export function readMilestone(project: string, statePath: string): Milestone {
     milestone: "", phase: "", nextCommand: "", turn: null, maxTurns: null,
     verifyRound: null, verifyRoundMax: null, fixRound: null, branch: "", engine: "", updatedAt: "",
     stateMtime: mtime(statePath) ?? 0,
-    tasks: [], tasksDone: 0, tasksTotal: 0, currentTask: "", lastTurn: "",
+    tasks: [], tasksDone: 0, tasksTotal: 0, taskGroups: [], currentTask: "", lastTurn: "",
     loopRunning: false, blocked: false, error: "",
   };
   let state: Record<string, unknown>;
@@ -159,6 +184,7 @@ export function readMilestone(project: string, statePath: string): Milestone {
   m.tasks = parseTasks(readText(join(msDir, "PLAN.md")));
   m.tasksTotal = m.tasks.length;
   m.tasksDone = m.tasks.filter((t) => t.done).length;
+  m.taskGroups = taskGroups(m.tasks);
   m.currentTask = m.tasks.find((t) => !t.done)?.id ?? "";
   m.lastTurn = lastTurn(readText(join(msDir, "PROGRESS.md")));
   m.loopRunning = pidAlive(join(gsd, "loop.pid"));

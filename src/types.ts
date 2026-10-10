@@ -4,6 +4,15 @@ export interface Task {
   id: string;
   title: string;
   done: boolean;
+  /** ## Tasks 節の中の ### 見出し（括弧書きの前まで）。見出しより前のタスクは "" */
+  group: string;
+}
+
+/** ### 見出しごとのタスクの進み */
+export interface TaskGroup {
+  name: string;
+  done: number;
+  total: number;
 }
 
 /** 1 つの state.json から読めること */
@@ -29,6 +38,8 @@ export interface Milestone {
   tasks: Task[];
   tasksDone: number;
   tasksTotal: number;
+  /** タスクを持つグループ（PLAN の順）。### 見出しが無ければ name "" の 1 つだけ */
+  taskGroups: TaskGroup[];
   /** 最初の未完了タスクの ID */
   currentTask: string;
   /** PROGRESS.md の最後の「## turn N — phase — 題」 */

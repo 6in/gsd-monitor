@@ -31,6 +31,7 @@ bun run typecheck
 | アプリ名 | `.gsd-lite` の親フォルダ名 |
 | フェーズ・ターン・次のコマンド・verify の回数 | `state.json` |
 | タスク（完了数 / 総数・今のタスク） | `PLAN.md` の `## Tasks` 節の `- [x] T1: 題` / `- [ ] T2: 題` |
+| タスクのグループ（「今回」の行・一覧の区切り） | `## Tasks` 節の中の `### 修正ラウンド 1（…）` 見出し（括弧書きの前までを名前にする）。見出しが無ければ出さない |
 | 直近のターン | `PROGRESS.md` の最後の `## turn N — phase — 題` |
 | 稼働中 | `.gsd-lite/loop.pid` のプロセスが生きている |
 | blocked | `state.json` の `phase` が `blocked`（`BLOCKED.md` は解決後も残るので見ない） |

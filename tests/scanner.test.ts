@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Monitor } from "../src/monitor.ts";
-import { discover, lastTurn, parseTasks, readMilestone, stateFiles } from "../src/scanner.ts";
+import { discover, groupName, lastTurn, parseTasks, readMilestone, stateFiles, taskGroups } from "../src/scanner.ts";
 
 let root: string;
 
@@ -33,6 +33,21 @@ const PLAN = `# PLAN
 - [ ] T99: ここも数えない
 `;
 
+const GROUPED_PLAN = `# PLAN
+## Tasks
+- [x] T1: 一つ目
+- [x] T2: 二つ目
+- **F タスクの定型**: 説明の行（チェックボックスではない）
+### 修正ラウンド 1（2026-10-10 plan、turn 19。REQUIREMENTS「修正ラウンド 1」）
+- [x] F1-1: 直す一つ目
+- [ ] F1-2: 直す二つ目
+### 修正ラウンド 2 (英数の括弧)
+- [ ] F2-1: 三回目
+## 決めた事項
+### 修正ラウンド 1 で確定した細部
+- [ ] F9: 節の外は数えない
+`;
+
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), "gsd-monitor-"));
 });
@@ -47,9 +62,29 @@ describe("parseTasks", () => {
     expect(t.map((x) => x.done)).toEqual([true, true, false, false]);
     expect(t[2]!.title).toBe("三つ目（未）");
   });
+  test("### 見出しより前のタスクのグループは空", () => {
+    expect(parseTasks(PLAN).map((x) => x.group)).toEqual(["", "", "", ""]);
+  });
+  test("## Tasks 節の中の ### 見出しでグループに分ける。節を出たら数えない", () => {
+    const t = parseTasks(GROUPED_PLAN);
+    expect(t.map((x) => [x.id, x.group])).toEqual([
+      ["T1", ""], ["T2", ""], ["F1-1", "修正ラウンド 1"], ["F1-2", "修正ラウンド 1"], ["F2-1", "修正ラウンド 2"],
+    ]);
+    expect(taskGroups(t)).toEqual([
+      { name: "", done: 2, total: 2 },
+      { name: "修正ラウンド 1", done: 1, total: 2 },
+      { name: "修正ラウンド 2", done: 0, total: 1 },
+    ]);
+  });
   test("PLAN が空なら 0 件", () => {
     expect(parseTasks("")).toEqual([]);
   });
+});
+
+test("groupName は括弧書きの前まで。括弧しか無ければ全体", () => {
+  expect(groupName("### 修正ラウンド 1（2026-10-10 plan）")).toBe("修正ラウンド 1");
+  expect(groupName("### Round 2 (fix)")).toBe("Round 2");
+  expect(groupName("### （注記だけ）")).toBe("（注記だけ）");
 });
 
 test("lastTurn は最後のターン見出し", () => {
@@ -85,6 +120,7 @@ describe("readMilestone", () => {
     expect(m.app).toBe("app1");
     expect([m.milestone, m.phase, m.turn, m.maxTurns, m.branch]).toEqual(["m1", "impl", 5, 60, "gsd-lite/m1"]);
     expect([m.tasksDone, m.tasksTotal, m.currentTask]).toEqual([2, 4, "T3a"]);
+    expect(m.taskGroups).toEqual([{ name: "", done: 2, total: 4 }]);
     expect(m.lastTurn).toBe("turn 5 — impl — T3a");
     expect(m.loopRunning).toBe(false);
     expect(m.blocked).toBe(false);

@@ -110,6 +110,8 @@ details.tasks ol { margin: 6px 0 0; padding: 0; list-style: none; max-height: 26
 details.tasks li { display: grid; grid-template-columns: 18px 44px 1fr; gap: 4px; font-size: 12px; padding: 2px 0; }
 details.tasks li.done { color: var(--muted); }
 details.tasks li.now { font-weight: 600; color: var(--accent); }
+details.tasks li.group { grid-template-columns: 1fr auto; margin-top: 6px; padding-top: 4px; border-top: 1px solid var(--line); font-weight: 600; color: var(--muted); }
+details.tasks li.group:first-child { margin-top: 0; border-top: 0; }
 
 .events { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; align-self: start; }
 .events h2 { margin: 0 0 8px; font-size: 14px; }

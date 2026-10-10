@@ -37,6 +37,11 @@ function clock(ms: number): string {
   return new Date(ms).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+/** ### 見出しより前のタスクは名前が "" */
+function groupLabel(name: string): string {
+  return name || "最初の計画";
+}
+
 function phaseKey(m: Milestone): string {
   if (m.error) return "error";
   if (m.blocked) return "blocked";
@@ -69,14 +74,26 @@ function card(m: Milestone): string {
   if (m.error) {
     return `<article class="card" style="--phase-color:${phaseColor(key)}">${head}<div class="error">${esc(m.error)}</div></article>`;
   }
+  // ### 見出し（修正ラウンド等）が PLAN にあるときだけ、一覧を区切り、最新のグループの進みを別の行に出す
+  const grouped = m.taskGroups.length > 1;
+  const latest = grouped ? m.taskGroups[m.taskGroups.length - 1]! : null;
+  const groupStats = new Map(m.taskGroups.map((g) => [g.name, g]));
+  let prevGroup: string | null = null;
+  const taskItems = m.tasks.map((t) => {
+    let head = "";
+    if (grouped && t.group !== prevGroup) {
+      const g = groupStats.get(t.group)!;
+      head = `<li class="group"><span>${esc(groupLabel(t.group))}</span><span class="num">${g.done}/${g.total}</span></li>`;
+    }
+    prevGroup = t.group;
+    return `${head}<li class="${t.done ? "done" : t.id === m.currentTask ? "now" : ""}">
+              <span>${t.done ? "✔" : t.id === m.currentTask ? "▶" : "・"}</span>
+              <span class="mono">${esc(t.id)}</span><span>${esc(t.title)}</span></li>`;
+  });
   const tasksList = m.tasks.length
     ? `<details class="tasks" data-id="${esc(id)}" ${openTasks.has(id) ? "open" : ""}>
         <summary>タスク一覧（${m.tasksDone}/${m.tasksTotal}）</summary>
-        <ol>${m.tasks
-          .map((t) => `<li class="${t.done ? "done" : t.id === m.currentTask ? "now" : ""}">
-              <span>${t.done ? "✔" : t.id === m.currentTask ? "▶" : "・"}</span>
-              <span class="mono">${esc(t.id)}</span><span>${esc(t.title)}</span></li>`)
-          .join("")}</ol>
+        <ol>${taskItems.join("")}</ol>
       </details>`
     : "";
   return `
@@ -87,6 +104,9 @@ function card(m: Milestone): string {
     <div class="row"><span class="label">タスク</span>
       <div class="bar"><span style="width:${taskPct}%"></span></div>
       <span class="num">${m.tasksTotal ? `${m.tasksDone}/${m.tasksTotal}` : "PLAN なし"}</span></div>
+    ${latest ? `<div class="row"><span class="label">今回</span>
+      <div class="bar"><span style="width:${pct(latest.done, latest.total)}%"></span></div>
+      <span class="num">${esc(groupLabel(latest.name))} ${latest.done}/${latest.total}</span></div>` : ""}
     <div class="row"><span class="label">ターン</span>
       <div class="bar turns${turnPct >= 80 ? " hot" : ""}"><span style="width:${turnPct}%"></span></div>
       <span class="num">${m.turn ?? "-"}/${m.maxTurns ?? "-"}</span></div>
