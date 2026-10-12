@@ -131,9 +131,21 @@ describe("readMilestone", () => {
     put(join(dir, ".gsd-lite", "loop.pid"), String(process.pid));
     const m = readMilestone(dir, stateFiles(dir)[0]!);
     expect(m.blocked).toBe(false);
+    expect(m.blockedTitle).toBe("");
     expect(m.loopRunning).toBe(true);
     const b = project("app3", { phase: "blocked" });
     expect(readMilestone(b, stateFiles(b)[0]!).blocked).toBe(true);
+    expect(readMilestone(b, stateFiles(b)[0]!).blockedTitle).toBe("");
+  });
+  test("blocked のときだけ BLOCKED.md の最初の見出しを読む", () => {
+    const b = project("app5", { phase: "blocked" });
+    put(join(b, ".gsd-lite", "BLOCKED.md"), "前置き\n\n# BLOCKED — verify round 3 の指摘が上限超過  \n\n## 詳細\n");
+    expect(readMilestone(b, stateFiles(b)[0]!).blockedTitle).toBe("BLOCKED — verify round 3 の指摘が上限超過");
+    const c = project("app6", { milestones: true }, "");
+    put(join(c, ".gsd-lite", "milestones", "ms-a", "state.json"), JSON.stringify({ phase: "blocked" }));
+    put(join(c, ".gsd-lite", "milestones", "ms-a", "BLOCKED.md"), "## 見出し 2 でも拾う\n");
+    const sp = stateFiles(c).find((p) => p.includes("ms-a"))!;
+    expect(readMilestone(c, sp).blockedTitle).toBe("見出し 2 でも拾う");
   });
   test("死んだ pid・壊れた pid ファイルは停止", () => {
     const dir = project("app4", { phase: "impl" });

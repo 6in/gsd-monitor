@@ -46,6 +46,8 @@ export interface Milestone {
   lastTurn: string;
   loopRunning: boolean;
   blocked: boolean;
+  /** blocked のときだけ、BLOCKED.md の最初の見出し（# を除く）。無ければ "" */
+  blockedTitle: string;
   error: string;
 }
 

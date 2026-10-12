@@ -5,6 +5,7 @@
 - 探索開始フォルダの下から `.gsd-lite/` を持つディレクトリを探し、親フォルダ名をアプリ名として並べる
 - 既定で 60 秒ごとに走査し、`state.json`・`PLAN.md`・`PROGRESS.md`・`loop.pid` の mtime が変わったプロジェクトだけ読み直す
 - 画面ではプロジェクトごとに、フェーズ・ターン数・タスクの完了数・今のタスク・直近のターン・ループの稼働を出す。起動後に検知した変化（フェーズの遷移、ターンやタスクの進み、ループの起動と停止）は履歴に並ぶ
+- 画面の「通知を有効にする」を押して許可すると、タブを開いている間はブラウザ通知（OS の通知）で知らせる: phase が blocked / done に変わったとき、ループが止まりそのとき phase が done / blocked 以外のとき。ページを開いた直後の状態では出さず、前回の取得結果からの変化だけ（判定は `src/notify.ts`）。外部サービスには何も送らない。https か localhost でだけ動く
 - 対応する形: in-repo（`.gsd-lite/state.json`）と gsd-control（`.gsd-lite/milestones/<slug>/state.json`）
 
 ## 使い方
@@ -35,5 +36,6 @@ bun run typecheck
 | 直近のターン | `PROGRESS.md` の最後の `## turn N — phase — 題` |
 | 稼働中 | `.gsd-lite/loop.pid` のプロセスが生きている |
 | blocked | `state.json` の `phase` が `blocked`（`BLOCKED.md` は解決後も残るので見ない） |
+| BLOCKED の見出し（通知の本文） | blocked のときだけ、`BLOCKED.md` の最初の見出し |
 
 既定で `*/components/*`（他リポジトリに取り込んだ部品の写し。元のリポジトリと二重に出るため）を除く。`.gsd-lite` の中（scratch の写し）・`.git`・`node_modules`・`.venv` には降りない。

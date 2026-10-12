@@ -134,6 +134,15 @@ export function lastTurn(progressText: string): string {
   return last;
 }
 
+/** 最初の Markdown 見出し（# を除く）。無ければ "" */
+export function firstHeading(text: string): string {
+  for (const line of text.split(/\r?\n/)) {
+    const h = /^#{1,6}\s+(.+)$/.exec(line.trim());
+    if (h) return h[1]!.trim();
+  }
+  return "";
+}
+
 export function pidAlive(pidFile: string): boolean {
   const pid = Number.parseInt(readText(pidFile).trim(), 10);
   if (!Number.isInteger(pid) || pid <= 0) return false;
@@ -157,7 +166,7 @@ export function readMilestone(project: string, statePath: string): Milestone {
     verifyRound: null, verifyRoundMax: null, fixRound: null, branch: "", engine: "", updatedAt: "",
     stateMtime: mtime(statePath) ?? 0,
     tasks: [], tasksDone: 0, tasksTotal: 0, taskGroups: [], currentTask: "", lastTurn: "",
-    loopRunning: false, blocked: false, error: "",
+    loopRunning: false, blocked: false, blockedTitle: "", error: "",
   };
   let state: Record<string, unknown>;
   try {
@@ -190,6 +199,7 @@ export function readMilestone(project: string, statePath: string): Milestone {
   m.loopRunning = pidAlive(join(gsd, "loop.pid"));
   // BLOCKED.md は解決後も残るので、ループ本体が書く phase だけで判定する
   m.blocked = m.phase === "blocked";
+  if (m.blocked) m.blockedTitle = firstHeading(readText(join(msDir, "BLOCKED.md")));
   return m;
 }
 
